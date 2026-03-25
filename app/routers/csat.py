@@ -8,13 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import verify_api_key
 from app.models import CSAT
-from app.schemas import (
-    CSATAverageResponse,
-    CSATByAgentResponse,
-    CSATCreate,
-    CSATResponse,
-    CSATUpdate,
-)
+from app.schemas import CSATAverageResponse, CSATByAgentResponse, CSATCreate, CSATResponse, CSATUpdate
 
 router = APIRouter(prefix="/api/csat", tags=["csat"])
 

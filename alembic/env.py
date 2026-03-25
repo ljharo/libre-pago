@@ -1,10 +1,14 @@
-from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
-from alembic import context
 import os
 import sys
+from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config, pool
+
+from alembic import context
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from app.database import Base  # noqa: E402
 
 config = context.config
 url = os.environ.get("DATABASE_URL", "sqlite:///./librepago.db")
@@ -12,9 +16,6 @@ config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-from app.database import Base
-from app.models import Channel, Agent, Team, ClosedConversation, Lifecycle, Ad, CSAT
 
 target_metadata = Base.metadata
 
@@ -39,9 +40,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

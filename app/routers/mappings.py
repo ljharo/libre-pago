@@ -4,14 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import verify_api_key
 from app.models import Agent, Channel, Team
-from app.schemas import (
-    AgentCreate,
-    AgentResponse,
-    ChannelCreate,
-    ChannelResponse,
-    TeamCreate,
-    TeamResponse,
-)
+from app.schemas import AgentCreate, AgentResponse, ChannelCreate, ChannelResponse, TeamCreate, TeamResponse
 
 router = APIRouter(prefix="/api", tags=["mappings"])
 

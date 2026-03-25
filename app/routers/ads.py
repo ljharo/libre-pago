@@ -7,13 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import verify_api_key
 from app.models import Ad
-from app.schemas import (
-    AdCreate,
-    AdResponse,
-    AdUpdate,
-    ChannelStatsResponse,
-    TopCampaignStatsResponse,
-)
+from app.schemas import AdCreate, AdResponse, AdUpdate, ChannelStatsResponse, TopCampaignStatsResponse
 
 router = APIRouter(prefix="/api/ads", tags=["ads"])
 

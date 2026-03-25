@@ -6,12 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import verify_api_key
 from app.models import Lifecycle
-from app.schemas import (
-    LifecycleCreate,
-    LifecycleResponse,
-    LifecycleUpdate,
-    PipelineStatsResponse,
-)
+from app.schemas import LifecycleCreate, LifecycleResponse, LifecycleUpdate, PipelineStatsResponse
 
 router = APIRouter(prefix="/api/lifecycles", tags=["lifecycles"])
 

@@ -1,11 +1,4 @@
-from app.schemas.ads import (
-    AdBase,
-    AdCreate,
-    AdResponse,
-    AdUpdate,
-    ChannelStatsResponse,
-    TopCampaignStatsResponse,
-)
+from app.schemas.ads import AdBase, AdCreate, AdResponse, AdUpdate, ChannelStatsResponse, TopCampaignStatsResponse
 from app.schemas.conversation import (
     AIvsHumanStatsResponse,
     ClosedConversationBase,
@@ -14,14 +7,7 @@ from app.schemas.conversation import (
     ClosedConversationUpdate,
     ConversationStatsResponse,
 )
-from app.schemas.csat import (
-    CSATAverageResponse,
-    CSATBase,
-    CSATByAgentResponse,
-    CSATCreate,
-    CSATResponse,
-    CSATUpdate,
-)
+from app.schemas.csat import CSATAverageResponse, CSATBase, CSATByAgentResponse, CSATCreate, CSATResponse, CSATUpdate
 from app.schemas.lifecycle import (
     LifecycleBase,
     LifecycleCreate,
