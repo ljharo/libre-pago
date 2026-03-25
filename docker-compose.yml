@@ -6,7 +6,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: /app/librepago.db
+      DATABASE_URL: sqlite:////app/librepago.db
       API_KEY: ${API_KEY:-your-secure-api-key-change-me}
       DEBUG: "false"
     command: >
