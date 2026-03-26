@@ -216,12 +216,33 @@ def _convert_csat(df: pd.DataFrame, db: Session) -> pd.DataFrame:
 
 
 @router.post("/{spreadsheet_type}", response_model=ImportResponse)
-def import_spreadsheet(
+async def import_spreadsheet(
     spreadsheet_type: SpreadsheetType,
     file: UploadFile,
     db: Session = Depends(get_db),
     _: str = Depends(verify_api_key),
 ):
+    """
+    Importa un archivo Excel y lo guarda en la base de datos.
+
+    - **spreadsheet_type**: Tipo de spreadsheet (closed_conversations, lifecycles, ads, csat)
+    - **file**: Archivo Excel (.xlsx, .xls)
+
+    Retorna el número de registros importados y cualquier error encontrado.
+    """
+
+    file_size = 0
+    file_content = await file.read()
+    file_size = len(file_content)
+    await file.seek(0)
+
+    max_file_size = 10 * 1024 * 1024
+    if file_size > max_file_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="El archivo excede el límite de 10MB",
+        )
+
     if not file.filename or not file.filename.endswith((".xlsx", ".xls")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -346,6 +367,13 @@ def get_template(
     spreadsheet_type: SpreadsheetType,
     _: str = Depends(verify_api_key),
 ):
+    """
+    Obtiene la plantilla de importación para un tipo de spreadsheet.
+
+    - **spreadsheet_type**: Tipo de spreadsheet (closed_conversations, lifecycles, ads, csat)
+
+    Retorna las columnas esperadas y un ejemplo de datos.
+    """
     templates = {
         SpreadsheetType.CLOSED_CONVERSATIONS: {
             "columns": [
