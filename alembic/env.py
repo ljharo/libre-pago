@@ -8,10 +8,12 @@ from alembic import context
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from app.config import settings  # noqa: E402
 from app.database import Base  # noqa: E402
 
 config = context.config
-url = os.environ.get("DATABASE_URL", "sqlite:///./librepago.db")
+
+url = settings.database_url
 config.set_main_option("sqlalchemy.url", url)
 
 if config.config_file_name is not None:
