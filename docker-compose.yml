@@ -61,15 +61,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL:
+        VITE_API_KEY:
     networks:
       - trading_net
     ports:
       - "3001:3001"
-    env_file: .env
-    environment:
-      # Es vital para que el cliente sepa dónde está el backend
-      VITE_API_URL: ${VITE_API_URL}
-      VITE_API_KEY: ${VITE_API_KEY}
     depends_on:
       - api
     restart: unless-stopped
