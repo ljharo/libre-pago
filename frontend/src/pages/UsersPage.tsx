@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi } from '../lib/api';
-import { Users, UserPlus, Trash2, Edit, LogOut } from 'lucide-react';
+import { UserPlus, Trash2, LogOut } from 'lucide-react';
 
 interface User {
   id: number;
