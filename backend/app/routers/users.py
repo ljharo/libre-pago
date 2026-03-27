@@ -71,6 +71,44 @@ def get_user(
     return user
 
 
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_user(
+    request: UserCreate,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
+    token_data: TokenPayload = Depends(verify_jwt),
+):
+    if token_data.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores pueden crear usuarios",
+        )
+
+    # Only allow creating users with role "user" (not admin)
+    if request.role == "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se pueden crear usuarios con rol 'user'",
+        )
+
+    existing = db.query(User).filter(User.username == request.username).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El nombre de usuario ya existe",
+        )
+
+    user = User(
+        username=request.username,
+        password_hash=get_password_hash(request.password),
+        role=request.role,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: int,
@@ -92,7 +130,7 @@ def update_user(
             detail="Usuario no encontrado",
         )
 
-    if request.username:
+    if request.username is not None:
         existing = db.query(User).filter(User.username == request.username, User.id != user_id).first()
         if existing:
             raise HTTPException(
@@ -101,10 +139,10 @@ def update_user(
             )
         user.username = request.username
 
-    if request.password:
+    if request.password is not None:
         user.password_hash = get_password_hash(request.password)
 
-    if request.role:
+    if request.role is not None:
         if request.role not in ["admin", "user"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
