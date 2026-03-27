@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import verify_api_key
+from app.dependencies import TokenPayload, verify_api_key, verify_jwt
 from app.models import CSAT, Ad, Agent, Channel, ClosedConversation, Lifecycle, Team
 from app.schemas.import_ import ImportResponse, ImportTemplateResponse, SpreadsheetType
 
@@ -221,6 +221,7 @@ async def import_spreadsheet(
     file: UploadFile,
     db: Session = Depends(get_db),
     _: str = Depends(verify_api_key),
+    token_data: TokenPayload = Depends(verify_jwt),
 ):
     """
     Importa un archivo Excel y lo guarda en la base de datos.

@@ -3,6 +3,7 @@ from app.models.closed_conversations import ClosedConversation
 from app.models.csat import CSAT
 from app.models.lifecycle import Lifecycle
 from app.models.mappings import Agent, Channel, Team
+from app.models.user import User
 
 __all__ = [
     "Channel",
@@ -12,4 +13,5 @@ __all__ = [
     "Lifecycle",
     "Ad",
     "CSAT",
+    "User",
 ]
