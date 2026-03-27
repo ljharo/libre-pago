@@ -1,0 +1,280 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { usersApi } from '../lib/api';
+import { UserPlus, Trash2, LogOut, EyeOff, Eye, Edit, Sun, Moon } from 'lucide-react';
+
+interface User {
+  id: number;
+  username: string;
+}
+
+export default function UsersPage() {
+   const [users, setUsers] = useState<User[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState('');
+   const [showModal, setShowModal] = useState(false);
+   const [editUserId, setEditUserId] = useState<number | null>(null);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+   const [isDarkMode, setIsDarkMode] = useState(false);
+   const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    loadUsers();
+  }, [navigate]);
+
+  // Update HTML class and localStorage when dark mode changes
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', String(isDarkMode));
+  }, [isDarkMode]);
+
+  const loadUsers = async () => {
+    try {
+      const response = await usersApi.list();
+      setUsers(response.data);
+    } catch (err) {
+      setError('Error al cargar usuarios');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        if (editUserId !== null) {
+          await usersApi.update(editUserId, { username, password });
+        } else {
+          await usersApi.create({ username, password });
+        }
+        setShowModal(false);
+        setUsername('');
+        setPassword('');
+        setShowPassword(false);
+        setEditUserId(null);
+        loadUsers();
+      } catch (err: unknown) {
+        const axiosError = err as { response?: { data?: { detail?: string } } };
+        setError(axiosError.response?.data?.detail || 'Error al guardar usuario');
+      }
+    };
+
+  const handleDeleteUser = async (id: number) => {
+    if (!confirm('¿Estás seguro de eliminar este usuario?')) return;
+    try {
+      await usersApi.delete(id);
+      loadUsers();
+    } catch (err) {
+      setError('Error al eliminar usuario');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Cargando...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      <nav className={`${isDarkMode ? 'bg-gray-800' : 'bg-blue-600'} ${isDarkMode ? 'text-gray-100' : 'text-white'} p-4`}>
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/dashboard')} className={`${isDarkMode ? 'text-gray-100' : 'text-white'} hover:underline`}>
+              ← Volver
+            </button>
+            <button onClick={() => navigate('/dashboard')} className={`${isDarkMode ? 'text-gray-100' : 'text-white'} text-2xl font-bold hover:underline`}>
+              Gestión de Usuarios
+            </button>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className={`${isDarkMode ? 'text-gray-100' : 'text-white'} text-sm`}>{currentUser.username}</span>
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="flex items-center gap-2 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800"
+            >
+              {isDarkMode ? (
+                <Sun size={18} className="text-yellow-400" />
+              ) : (
+                <Moon size={18} className="text-gray-400" />
+              )}
+            </button>
+            <button onClick={handleLogout} className="flex items-center gap-2 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800">
+              <LogOut size={18} />
+              Salir
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="container mx-auto p-6">
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Usuarios</h2>
+             {currentUser.role === 'admin' && (
+               <button
+                 onClick={() => {
+                   setEditUserId(null);
+                   setUsername('');
+                   setPassword('');
+                   setShowPassword(false);
+                   setShowModal(true);
+                 }}
+                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+               >
+                 <UserPlus size={20} />
+                 Nuevo Usuario
+               </button>
+             )}
+          </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded">
+              {error}
+            </div>
+          )}
+
+            <div className="overflow-x-auto">
+             <table className="w-full">
+               <thead>
+                 <tr>
+                   <th className={isDarkMode ? 'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase bg-gray-50 dark:bg-gray-700' : 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase bg-gray-50 dark:bg-gray-700'}>ID</th>
+                   <th className={isDarkMode ? 'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase bg-gray-50 dark:bg-gray-700' : 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase bg-gray-50 dark:bg-gray-700'}>Usuario</th>
+                   <th className={isDarkMode ? 'px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase bg-gray-50 dark:bg-gray-700' : 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase bg-gray-50 dark:bg-gray-700'}>Acciones</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                 {users.map((user) => (
+                   <tr key={user.id} className={isDarkMode ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}>
+                     <td className={isDarkMode ? 'px-6 py-4 text-sm text-gray-100' : 'px-6 py-4 text-sm text-gray-900'}>{user.id}</td>
+                     <td className={isDarkMode ? 'px-6 py-4 text-sm text-gray-100' : 'px-6 py-4 text-sm text-gray-900'}>{user.username}</td>
+                     <td className="px-6 py-4 text-sm">
+                       <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-blue-200">
+                         Usuario
+                       </span>
+                     </td>
+                     <td className="px-6 py-4 text-sm">
+                       {currentUser.role === 'admin' && (
+                         <>
+                            {user.id !== currentUser.id && (
+                              <button
+                                onClick={() => {
+                                  setEditUserId(user.id);
+                                  setUsername(user.username);
+                                  setPassword(''); // Never fill password for security
+                                  setShowModal(true);
+                                }}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                <Edit size={18} />
+                              </button>
+                            )}
+                           {user.id !== currentUser.id && (
+                             <button
+                               onClick={() => handleDeleteUser(user.id)}
+                               className="text-red-600 hover:text-red-800 ml-2"
+                             >
+                               <Trash2 size={18} />
+                             </button>
+                           )}
+                         </>
+                       )}
+                     </td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+          </div>
+        </div>
+      </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">
+              {editUserId !== null ? 'Editar Usuario' : 'Nuevo Usuario'}
+            </h3>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+              </div>
+               <div className="mb-4">
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                 <div className="flex items-center">
+                   <input
+                     type={showPassword ? "text" : "password"}
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                     // For edit mode, we don't require password if not changing
+                     {...(editUserId === null ? { required: true } : {})}
+                   />
+                   <button
+                     type="button"
+                     onClick={() => setShowPassword(!showPassword)}
+                     className="ml-2 p-1 rounded hover:bg-gray-100"
+                   >
+                     {showPassword ? (
+                       <EyeOff size={18} className="text-gray-500" />
+                     ) : (
+                       <Eye size={18} className="text-gray-500" />
+                     )}
+                   </button>
+                 </div>
+               </div>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditUserId(null);
+                    setUsername('');
+                    setPassword('');
+                    setShowPassword(false);
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+                >
+                  {editUserId !== null ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

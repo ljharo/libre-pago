@@ -1,72 +1,221 @@
-# LibrePago Backend
+# LibrePago
 
-Backend API para gestionar datos de spreadsheets de LibrePago.
+Sistema de gestión de spreadsheets para operaciones de pago.
+
+## Arquitectura
+
+```
+┌─────────────┐     ┌─────────────┐
+│   Frontend  │────▶│  Backend    │
+│  (React+TS) │     │ (FastAPI)   │
+└─────────────┘     └──────┬──────┘
+                           │
+                    ┌──────┴──────┐
+                    │             │
+                ┌───▼───┐    ┌───▼───┐
+                │  DB   │    │Redis  │
+                │(Postgres)   │(Cache)│
+                └────────┘    └───────┘
+```
 
 ## Tecnologías
 
-- **FastAPI**: Framework web moderno y rápido
-- **PostgreSQL**: Base de datos relacional
-- **SQLAlchemy**: ORM para gestión de base de datos
-- **Pandas**: Procesamiento de archivos Excel
-- **Alembic**: Gestión de migraciones de base de datos
-- **Poetry**: Gestión de dependencias
+### Backend
+- **FastAPI** - Framework web moderno y rápido
+- **PostgreSQL** - Base de datos relacional
+- **SQLAlchemy** - ORM para gestión de base de datos
+- **Pandas** - Procesamiento de archivos Excel
+- **Alembic** - Gestión de migraciones
+- **Poetry** - Gestión de dependencias
+- **Redis** - Cache y rate limiting
+
+### Frontend
+- **React 18** - Librería UI
+- **TypeScript** - Tipado estático
+- **Vite** - Build tool
+- **Tailwind CSS** - Estilos
+- **React Router** - Navegación
+- **Axios** - HTTP client
+- **Lucide React** - Iconos
 
 ## Requisitos
 
-- Python 3.11+
-- PostgreSQL 15
-- Docker (para desarrollo)
+- Docker y Docker Compose
+- Node.js 22+ (para desarrollo local del frontend)
+- Python 3.11+ (para desarrollo local del backend)
 
-## Instalación
+## Quick Start
 
-```bash
-# Instalar dependencias
-poetry install
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus configuraciones
-
-# Ejecutar migraciones
-poetry run alembic upgrade head
-
-# Poblar datos base (channels, agents, teams)
-poetry run python -m app.seed
-```
-
-## Desarrollo
+### Con Docker (Producción/Desarrollo)
 
 ```bash
-# Iniciar servidor de desarrollo
-poetry run start
-
-# Ejecutar migraciones
-poetry run alembic upgrade head
-
-# Crear nueva migración
-poetry run alembic revision --autogenerate -m "description"
-
-# Pre-commit
-poetry run pre-commit install
-poetry run pre-commit run --all-files
-```
-
-## Docker
-
-```bash
-# Levantar servicios
-docker compose -f docker-compose.dev.yml up -d
+# Levantar todos los servicios
+docker compose up -d --build
 
 # Ver logs
-docker compose logs -f api
+docker compose logs -f
 
 # Detener servicios
 docker compose down
 ```
 
-## Testing
+**Servicios:**
+- Frontend: http://localhost:3000
+- API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+
+### Desarrollo Local
+
+#### Backend
 
 ```bash
+cd backend
+
+# Instalar dependencias
+poetry install
+
+# Configurar variables de entorno
+cp .env.example .env
+
+# Ejecutar migraciones
+poetry run alembic upgrade head
+
+# Iniciar servidor
+poetry run start
+```
+
+#### Frontend
+
+```bash
+cd frontend
+
+# Instalar dependencias
+npm install
+
+# Iniciar servidor de desarrollo
+npm run dev
+```
+
+## Estructura del Proyecto
+
+```
+libre-pago/
+├── docker-compose.yml          # Orquestación de servicios
+├── README.md                   # Este archivo
+├── docs/                       # Documentación de API
+│   └── API.md                  # Referencia de endpoints
+├── backend/                    # API FastAPI
+│   ├── app/                    # Código fuente
+│   │   ├── main.py             # Aplicación principal
+│   │   ├── config.py           # Configuración
+│   │   ├── database.py         # Conexión a BD
+│   │   ├── models/             # Modelos SQLAlchemy
+│   │   ├── routers/            # Endpoints
+│   │   ├── schemas/            # Esquemas Pydantic
+│   │   └── dependencies.py     # Dependencias FastAPI
+│   ├── alembic/                # Migraciones
+│   ├── tests/                  # Tests
+│   ├── pyproject.toml          # Dependencias Python
+│   └── .env                    # Variables de entorno
+└── frontend/                   # Aplicación React
+    ├── src/
+    │   ├── pages/              # Páginas
+    │   │   ├── LoginPage.tsx   # Login
+    │   │   ├── DashboardPage.tsx # Dashboard
+    │   │   ├── ImportPage.tsx  # Importar Excel
+    │   │   └── UsersPage.tsx   # Gestión usuarios
+    │   ├── lib/
+    │   │   └── api.ts          # Cliente API
+    │   └── App.tsx             # Router principal
+    ├── package.json            # Dependencias Node
+    └── vite.config.ts          # Configuración Vite
+```
+
+## Páginas del Frontend
+
+| Ruta | Descripción |
+|------|-------------|
+| `/login` | Login de usuario |
+| `/dashboard` | Dashboard con estadísticas |
+| `/import` | Importar archivos Excel |
+| `/users` | Gestión de usuarios (solo admin) |
+
+## API Endpoints
+
+Consulta la documentación completa en `docs/API.md`.
+
+### Autenticación
+
+```bash
+# Login
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "X-API-Key: test-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin123"}'
+```
+
+### Importar Excel
+
+```bash
+curl -X POST http://localhost:8000/api/import/closed_conversations \
+  -H "X-API-Key: test-api-key" \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@data.xlsx"
+```
+
+### Tipos de spreadsheet
+- `closed_conversations` - Conversaciones cerradas
+- `lifecycles` - Ciclos de vida
+- `ads` - Anuncios
+- `csat` - Satisfacción del cliente
+
+## Variables de Entorno
+
+### Backend (.env)
+
+| Variable | Descripción | Default |
+|----------|-------------|---------|
+| `DB_USER` | Usuario PostgreSQL | admin |
+| `DB_PASSWORD` | Contraseña PostgreSQL | password |
+| `DB_HOST` | Host PostgreSQL | db |
+| `DB_PORT` | Puerto PostgreSQL | 5432 |
+| `DB_NAME` | Nombre base de datos | libre_pago_db |
+| `REDIS_HOST` | Host Redis | redis |
+| `REDIS_PORT` | Puerto Redis | 6379 |
+| `API_KEY` | Clave API | test-api-key |
+| `JWT_SECRET` | Secret para JWT | change-me-in-production |
+| `JWT_EXPIRE_DAYS` | Expiración token | 1 |
+| `ADMIN_USERNAME` | Usuario admin | admin |
+| `ADMIN_PASSWORD` | Contraseña admin | admin123 |
+
+### Frontend (.env)
+
+| Variable | Descripción | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | URL de la API | http://localhost:8000 |
+| `VITE_API_KEY` | Clave API | test-api-key |
+
+## Desarrollo
+
+### Pre-commit (Backend)
+
+```bash
+cd backend
+
+# Instalar hooks
+poetry run pre-commit install
+
+# Ejecutar validaciones
+poetry run pre-commit run --all-files
+```
+
+### Testing (Backend)
+
+```bash
+cd backend
+
 # Ejecutar tests
 poetry run pytest
 
@@ -74,98 +223,31 @@ poetry run pytest
 poetry run pytest --cov=app
 ```
 
-## Linting
+### Linting (Backend)
 
 ```bash
+cd backend
+
 poetry run ruff check .
 poetry run ruff format .
 poetry run mypy app
 poetry run isort app --check-only
 ```
 
-## API Endpoints
-
-### Health Check
-- `GET /health` - Verificar estado del servicio
-
-### Importación de Excel
-- `GET /api/import/templates/{spreadsheet_type}` - Obtener plantilla de importación
-- `POST /api/import/{spreadsheet_type}` - Importar archivo Excel
-
-**Tipos de spreadsheet soportados:**
-- `closed_conversations` - Conversaciones cerradas
-- `lifecycles` - Ciclos de vida
-- `ads` - Anuncios
-- `csat` - Satisfacción del cliente
-
-### Conversaciones
-- `GET /api/conversations` - Listar todas las conversaciones
-- `GET /api/conversations/{conversation_id}` - Obtener conversación específica
-- `GET /api/conversations/stats/monthly` - Estadísticas mensuales
-- `GET /api/conversations/stats/ai-vs-human` - Comparación AI vs humano
-
-### Ciclos de Vida
-- `GET /api/lifecycles` - Listar todos los ciclos de vida
-- `GET /api/lifecycles/{lifecycle_id}` - Obtener ciclo de vida específico
-- `GET /api/lifecycles/contact/{contact_id}` - Obtener ciclos de vida por contacto
-- `GET /api/lifecycles/stats/pipeline` - Estadísticas de pipeline
-
-### Anuncios
-- `GET /api/ads` - Listar todos los anuncios
-- `GET /api/ads/{ad_id}` - Obtener anuncio específico
-- `GET /api/ads/stats/by-channel` - Estadísticas por canal
-- `GET /api/ads/stats/top-campaigns` - Mejores campañas
-
-### CSAT
-- `GET /api/csat` - Listar todas las evaluaciones CSAT
-- `GET /api/csat/{csat_id}` - Obtener evaluación específica
-- `GET /api/csat/stats/average` - Promedio de satisfacción
-- `GET /api/csat/stats/by-agent` - CSAT por agente
-
-### Mapeos
-- `GET /api/channels` - Listar canales
-- `GET /api/agents` - Listar agentes
-- `GET /api/teams` - Listar equipos
-
-## Autenticación
-
-La API requiere un header `X-API-Key` para todas las solicitudes que lo requieran:
+### Build Frontend
 
 ```bash
-curl -H "X-API-Key: test-api-key" http://localhost:8000/api/channels
+cd frontend
+
+npm run build
 ```
 
-## Estructura del Proyecto
+## Notas
 
-```
-libre-pago/
-├── app/
-│   ├── config.py          # Configuración de la aplicación
-│   ├── database.py        # Conexión a base de datos
-│   ├── main.py            # Aplicación FastAPI
-│   ├── models/            # Modelos de SQLAlchemy
-│   ├── routers/           # Endpoints de la API
-│   ├── schemas/           # Esquemas Pydantic
-│   ├── dependencies.py    # Dependencias FastAPI
-│   ├── seed.py            # Datos iniciales
-│   └── scripts/           # Scripts de utilidad
-├── alembic/               # Migraciones de base de datos
-├── data/                  # Archivos Excel de prueba
-├── tests/                 # Tests del proyecto
-└── pyproject.toml         # Configuración de Poetry
-```
-
-## Variables de Entorno
-
-| Variable | Descripción | Default |
-|----------|-------------|---------|
-| `DB_USER` | Usuario de PostgreSQL | postgres |
-| `DB_PASSWORD` | Contraseña de PostgreSQL | postgres |
-| `DB_HOST` | Host de PostgreSQL | localhost |
-| `DB_PORT` | Puerto de PostgreSQL | 5432 |
-| `DB_NAME` | Nombre de la base de datos | librepago |
-| `API_KEY` | Clave para la API | default-api-key-change-me |
-| `DEBUG` | Modo debug | false |
+- El frontend se comunica con la API directamente en desarrollo
+- En producción, usar Cloudflare Zero Trust como proxy
+- Los archivos Excel deben tener formato específico (ver plantillas)
+- La segunda hoja del Excel puede contener mapeos de IDs externos
 
 ## Licencia
 
