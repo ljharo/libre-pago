@@ -72,12 +72,15 @@ export const agentsApi = {
     api.post('/api/agents', data),
 };
 
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
+
 export const conversationsApi = {
   list: (params?: { skip?: number; limit?: number }) =>
     api.get('/api/conversations', { params }),
   stats: {
-    monthly: () => api.get('/api/conversations/stats/monthly'),
-    aiVsHuman: () => api.get('/api/conversations/stats/ai-vs-human'),
+    monthly: () => api.get(`/api/conversations/stats/monthly?year=${currentYear}&month=${currentMonth}`),
+    aiVsHuman: () => api.get(`/api/conversations/stats/ai-vs-human?year=${currentYear}&month=${currentMonth}`),
   },
 };
 
@@ -92,16 +95,16 @@ export const lifecyclesApi = {
 export const adsApi = {
   list: (params?: { skip?: number; limit?: number }) => api.get('/api/ads', { params }),
   stats: {
-    byChannel: () => api.get('/api/ads/stats/by-channel'),
-    topCampaigns: () => api.get('/api/ads/stats/top-campaigns'),
+    byChannel: () => api.get(`/api/ads/stats/by-channel?year=${currentYear}&month=${currentMonth}`),
+    topCampaigns: () => api.get(`/api/ads/stats/top-campaigns?year=${currentYear}&month=${currentMonth}`),
   },
 };
 
 export const csatApi = {
   list: (params?: { skip?: number; limit?: number }) => api.get('/api/csat', { params }),
   stats: {
-    average: () => api.get('/api/csat/stats/average'),
-    byAgent: () => api.get('/api/csat/stats/by-agent'),
+    average: () => api.get(`/api/csat/stats/average?year=${currentYear}&month=${currentMonth}`),
+    byAgent: () => api.get(`/api/csat/stats/by-agent?year=${currentYear}&month=${currentMonth}`),
   },
 };
 

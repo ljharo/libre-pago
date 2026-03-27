@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usersApi } from '../lib/api';
-import { UserPlus, Trash2, LogOut } from 'lucide-react';
+import { UserPlus, Trash2, LogOut, EyeOff, Eye, Edit } from 'lucide-react';
 
 interface User {
   id: number;
@@ -14,9 +14,10 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newRole, setNewRole] = useState('user');
+  const [editUserId, setEditUserId] = useState<number | null>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,18 +40,23 @@ export default function UsersPage() {
     }
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await usersApi.create({ username: newUsername, password: newPassword, role: newRole });
+      if (editUserId !== null) {
+        await usersApi.update(editUserId, { username, password, role });
+      } else {
+        await usersApi.create({ username, password, role });
+      }
       setShowModal(false);
-      setNewUsername('');
-      setNewPassword('');
-      setNewRole('user');
+      setUsername('');
+      setPassword('');
+      setRole('user');
+      setEditUserId(null);
       loadUsers();
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { detail?: string } } };
-      setError(axiosError.response?.data?.detail || 'Error al crear usuario');
+      setError(axiosError.response?.data?.detail || 'Error al guardar usuario');
     }
   };
 
@@ -106,7 +112,13 @@ export default function UsersPage() {
             <h2 className="text-xl font-semibold">Usuarios</h2>
             {currentUser.role === 'admin' && (
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setEditUserId(null);
+                  setUsername('');
+                  setPassword('');
+                  setRole('user');
+                  setShowModal(true);
+                }}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
               >
                 <UserPlus size={20} />
@@ -142,13 +154,31 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      {currentUser.role === 'admin' && user.id !== currentUser.id && (
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                      {currentUser.role === 'admin' && (
+                        <>
+                          {user.id !== currentUser.id && (
+                            <button
+                              onClick={() => {
+                                setEditUserId(user.id);
+                                setUsername(user.username);
+                                setPassword(''); // Never fill password for security
+                                setRole(user.role);
+                                setShowModal(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              <Edit size={18} />
+                            </button>
+                          )}
+                          {user.id !== currentUser.id && user.role !== 'admin' && (
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="text-red-600 hover:text-red-800 ml-2"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>
@@ -162,14 +192,16 @@ export default function UsersPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Nuevo Usuario</h3>
-            <form onSubmit={handleCreateUser}>
+            <h3 className="text-lg font-semibold mb-4">
+              {editUserId !== null ? 'Editar Usuario' : 'Nuevo Usuario'}
+            </h3>
+            <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Usuario</label>
                 <input
                   type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   required
                 />
@@ -178,17 +210,18 @@ export default function UsersPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                 <input
                   type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
+                  // For edit mode, we don't require password if not changing
+                  {...(editUserId === null ? { required: true } : {})}
                 />
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
                 <select
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="user">Usuario</option>
@@ -198,7 +231,13 @@ export default function UsersPage() {
               <div className="flex gap-4">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditUserId(null);
+                    setUsername('');
+                    setPassword('');
+                    setRole('user');
+                  }}
                   className="flex-1 bg-gray-200 text-gray-700 py-2 rounded hover:bg-gray-300"
                 >
                   Cancelar
@@ -207,7 +246,7 @@ export default function UsersPage() {
                   type="submit"
                   className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
                 >
-                  Crear
+                  {editUserId !== null ? 'Actualizar' : 'Crear'}
                 </button>
               </div>
             </form>
