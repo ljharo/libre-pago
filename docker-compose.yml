@@ -5,18 +5,19 @@ services:
     image: postgres:16-alpine
     restart: always
     networks:
-      - libre_pago_net
+      - trading_net
     env_file: .env
     ports:
       - "5432:5432"
     environment:
+      # Mapeo necesario para la imagen oficial de Postgres
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,9 +26,7 @@ services:
     image: redis:7-alpine
     restart: always
     networks:
-      - libre_pago_net
-    volumes:
-      - redis_data:/data
+      - trading_net
     ports:
       - "6379:6379"
     healthcheck:
@@ -41,15 +40,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     networks:
-      - libre_pago_net
+      - trading_net
     ports:
       - "8000:8000"
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_HOST: redis
+      db_host: db
+      redis_host: redis
     depends_on:
       db:
         condition: service_healthy
@@ -65,16 +62,20 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     networks:
-      - libre_pago_net
-    env_file: .env
+      - trading_net
     ports:
       - "3001:3001"
+    env_file: .env
+    environment:
+      # Es vital para que el cliente sepa dónde está el backend
+      VITE_API_URL: ${VITE_API_URL}
+      VITE_API_KEY: ${VITE_API_KEY}
     depends_on:
       - api
     restart: unless-stopped
 
 networks:
-  libre_pago_net:
+  trading_net:
     driver: bridge
 
 volumes:
