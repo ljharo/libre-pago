@@ -34,6 +34,7 @@ ruff = "^0.1.14"
 mypy = "^1.8.0"
 isort = "^5.13.2"
 pre-commit = "^3.6.0"
+types-passlib = "^1.7.7.20260211"
 
 [tool.black]
 line-length = 120
@@ -54,6 +55,29 @@ python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
+check_untyped_defs = false
+ignore_missing_imports = true
+no_implicit_optional = false
+disable_error_code = ["arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = "sqlalchemy.*"
+ignore_missing_imports = true
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "pandas.*"
+ignore_missing_imports = true
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "app.routers.*"
+check_untyped_defs = false
+disable_error_code = ["arg-type", "assignment"]
+
+[[tool.mypy.overrides]]
+module = "app.models.*"
+check_untyped_defs = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

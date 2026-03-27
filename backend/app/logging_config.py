@@ -37,7 +37,7 @@ def setup_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
 
     if settings.log_format == "json":
-        formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(logger)s %(message)s")
+        formatter: logging.Formatter = CustomJsonFormatter("%(timestamp)s %(level)s %(logger)s %(message)s")
     else:
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
