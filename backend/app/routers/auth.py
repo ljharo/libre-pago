@@ -75,7 +75,12 @@ def authenticate_user(db: Session, username: str, password: str) -> AuthUser | N
         return None
     if not verify_password(password, user.password_hash):
         return None
-    return AuthUser(id=user.id, username=user.username, password_hash=user.password_hash, role=user.role)
+    return AuthUser(
+        id=user.id,
+        username=user.username,
+        password_hash=user.password_hash,
+        role=user.role,
+    )
 
 
 @router.post("/login", response_model=AuthResponse)

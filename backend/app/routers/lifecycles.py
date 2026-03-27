@@ -111,7 +111,10 @@ def get_pipeline_stats(
 
     latest_lifecycles = (
         db.query(Lifecycle)
-        .join(subquery, (Lifecycle.contact_id == subquery.c.contact_id) & (Lifecycle.fecha == subquery.c.fecha))
+        .join(
+            subquery,
+            (Lifecycle.contact_id == subquery.c.contact_id) & (Lifecycle.fecha == subquery.c.fecha),
+        )
         .all()
     )
 

@@ -5,6 +5,7 @@ Revises:
 Create Date: 2026-03-25 15:27:06.729905
 
 """
+
 from collections.abc import Sequence
 from typing import Union
 
@@ -124,15 +125,48 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("idx_closed_fecha_canal", "closed_conversations", ["fecha", "canal_id"], unique=False)
-    op.create_index("idx_closed_fecha_equipo", "closed_conversations", ["fecha", "equipo_id"], unique=False)
-    op.create_index(op.f("ix_closed_conversations_canal_id"), "closed_conversations", ["canal_id"], unique=False)
     op.create_index(
-        op.f("ix_closed_conversations_cesionario_id"), "closed_conversations", ["cesionario_id"], unique=False
+        "idx_closed_fecha_canal",
+        "closed_conversations",
+        ["fecha", "canal_id"],
+        unique=False,
     )
-    op.create_index(op.f("ix_closed_conversations_contact_id"), "closed_conversations", ["contact_id"], unique=False)
-    op.create_index(op.f("ix_closed_conversations_equipo_id"), "closed_conversations", ["equipo_id"], unique=False)
-    op.create_index(op.f("ix_closed_conversations_fecha"), "closed_conversations", ["fecha"], unique=False)
+    op.create_index(
+        "idx_closed_fecha_equipo",
+        "closed_conversations",
+        ["fecha", "equipo_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_closed_conversations_canal_id"),
+        "closed_conversations",
+        ["canal_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_closed_conversations_cesionario_id"),
+        "closed_conversations",
+        ["cesionario_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_closed_conversations_contact_id"),
+        "closed_conversations",
+        ["contact_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_closed_conversations_equipo_id"),
+        "closed_conversations",
+        ["equipo_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_closed_conversations_fecha"),
+        "closed_conversations",
+        ["fecha"],
+        unique=False,
+    )
     op.create_index(op.f("ix_closed_conversations_id"), "closed_conversations", ["id"], unique=False)
     op.create_table(
         "csat",

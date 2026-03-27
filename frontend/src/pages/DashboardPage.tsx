@@ -9,6 +9,8 @@ import {
   Upload,
   Users,
   LogOut,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface Stats {
@@ -22,6 +24,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -72,21 +75,33 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-blue-600 text-white p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">LibrePago</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm">{user.username} ({user.role})</span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800"
-            >
-              <LogOut size={18} />
-              Salir
+   return (
+     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+       <nav className={`${isDarkMode ? 'bg-gray-800' : 'bg-blue-600'} ${isDarkMode ? 'text-gray-100' : 'text-white'} p-4`}>
+          <div className="container mx-auto flex justify-between items-center">
+            <button onClick={() => navigate('/dashboard')} className={`${isDarkMode ? 'text-gray-100' : 'text-white'} hover:underline text-3xl font-bold`}>
+              LibrePago
             </button>
-          </div>
+             <div className="flex items-center gap-4">
+               <span className={`${isDarkMode ? 'text-gray-100' : 'text-white'} text-base font-medium`}> {user.username}</span>
+               <button
+                 onClick={() => setIsDarkMode(!isDarkMode)}
+                 className="flex items-center gap-2 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800"
+               >
+                 {isDarkMode ? (
+                   <Sun size={18} className="text-yellow-400" />
+                 ) : (
+                   <Moon size={18} className="text-gray-400" />
+                 )}
+               </button>
+               <button
+                 onClick={handleLogout}
+                 className="flex items-center gap-2 bg-blue-700 px-3 py-1 rounded hover:bg-blue-800"
+               >
+                <LogOut size={18} />
+                Salir
+              </button>
+            </div>
         </div>
       </nav>
 
@@ -99,60 +114,60 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center gap-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <MessageSquare className="text-blue-600" size={24} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className={isDarkMode ? 'bg-gray-800 p-6 rounded-lg shadow' : 'bg-white p-6 rounded-lg shadow'}>
+                <div className="flex items-center gap-4">
+                  <div className={isDarkMode ? 'bg-blue-600 p-3 rounded-full' : 'bg-blue-100 p-3 rounded-full'}>
+                    <MessageSquare className={isDarkMode ? 'text-blue-400' : 'text-blue-600'} size={24} />
+                  </div>
+                  <div>
+                    <p className={isDarkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>Conversaciones</p>
+                    <p className={isDarkMode ? 'text-gray-100 text-2xl font-bold' : 'text-gray-900 text-2xl font-bold'}>
+                      {stats?.conversations?.total || 0}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Conversaciones</p>
-                <p className="text-2xl font-bold">
-                  {stats?.conversations?.total || 0}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center gap-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <TrendingUp className="text-green-600" size={24} />
+              <div className={isDarkMode ? 'bg-gray-800 p-6 rounded-lg shadow' : 'bg-white p-6 rounded-lg shadow'}>
+                <div className="flex items-center gap-4">
+                  <div className={isDarkMode ? 'bg-green-600 p-3 rounded-full' : 'bg-green-100 p-3 rounded-full'}>
+                    <TrendingUp className={isDarkMode ? 'text-green-400' : 'text-green-600'} size={24} />
+                  </div>
+                  <div>
+                    <p className={isDarkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>Ciclos de Vida</p>
+                    <p className={isDarkMode ? 'text-gray-100 text-2xl font-bold' : 'text-gray-900 text-2xl font-bold'}>
+                      {stats?.lifecycles?.total || 0}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Ciclos de Vida</p>
-                <p className="text-2xl font-bold">
-                  {stats?.lifecycles?.total || 0}
-                </p>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center gap-4">
-              <div className="bg-purple-100 p-3 rounded-full">
-                <Target className="text-purple-600" size={24} />
+              <div className={isDarkMode ? 'bg-gray-800 p-6 rounded-lg shadow' : 'bg-white p-6 rounded-lg shadow'}>
+                <div className="flex items-center gap-4">
+                  <div className={isDarkMode ? 'bg-purple-600 p-3 rounded-full' : 'bg-purple-100 p-3 rounded-full'}>
+                    <Target className={isDarkMode ? 'text-purple-200' : 'text-purple-600'} size={24} />
+                  </div>
+                  <div>
+                    <p className={isDarkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>Anuncios</p>
+                    <p className={isDarkMode ? 'text-gray-100 text-2xl font-bold' : 'text-gray-900 text-2xl font-bold'}>{stats?.ads?.total || 0}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Anuncios</p>
-                <p className="text-2xl font-bold">{stats?.ads?.total || 0}</p>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="flex items-center gap-4">
-              <div className="bg-yellow-100 p-3 rounded-full">
-                <ThumbsUp className="text-yellow-600" size={24} />
+              <div className={isDarkMode ? 'bg-gray-800 p-6 rounded-lg shadow' : 'bg-white p-6 rounded-lg shadow'}>
+                <div className="flex items-center gap-4">
+                  <div className={isDarkMode ? 'bg-yellow-600 p-3 rounded-full' : 'bg-yellow-100 p-3 rounded-full'}>
+                    <ThumbsUp className={isDarkMode ? 'text-yellow-400' : 'text-yellow-600'} size={24} />
+                  </div>
+                  <div>
+                    <p className={isDarkMode ? 'text-gray-400 text-sm' : 'text-gray-600 text-sm'}>CSAT Promedio</p>
+                    <p className={isDarkMode ? 'text-gray-100 text-2xl font-bold' : 'text-gray-900 text-2xl font-bold'}>
+                      {stats?.csat?.average?.toFixed(1) || 0}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">CSAT Promedio</p>
-                <p className="text-2xl font-bold">
-                  {stats?.csat?.average?.toFixed(1) || 0}
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

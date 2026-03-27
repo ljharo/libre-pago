@@ -15,13 +15,11 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 class UserCreate(BaseModel):
     username: str
     password: str
-    role: str = "user"
 
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
-    role: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -84,13 +82,6 @@ def create_user(
             detail="Solo administradores pueden crear usuarios",
         )
 
-    # Only allow creating users with role "user" (not admin)
-    if request.role == "admin":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Solo se pueden crear usuarios con rol 'user'",
-        )
-
     existing = db.query(User).filter(User.username == request.username).first()
     if existing:
         raise HTTPException(
@@ -101,7 +92,7 @@ def create_user(
     user = User(
         username=request.username,
         password_hash=get_password_hash(request.password),
-        role=request.role,
+        role="user",  # All created users are regular users
     )
     db.add(user)
     db.commit()
@@ -141,14 +132,6 @@ def update_user(
 
     if request.password is not None:
         user.password_hash = get_password_hash(request.password)
-
-    if request.role is not None:
-        if request.role not in ["admin", "user"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Rol inválido",
-            )
-        user.role = request.role
 
     db.commit()
     db.refresh(user)

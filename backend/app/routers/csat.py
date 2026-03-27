@@ -143,7 +143,10 @@ def get_csat_by_agent(
             score_val: int = csat.csat_score  # type: ignore[assignment]
             old_total = agent_scores[agent_name]["total"]
             old_count = agent_scores[agent_name]["count"]
-            agent_scores[agent_name] = {"total": old_total + score_val, "count": old_count + 1}
+            agent_scores[agent_name] = {
+                "total": old_total + score_val,
+                "count": old_count + 1,
+            }
 
     agents_data = []
     for name, data in agent_scores.items():

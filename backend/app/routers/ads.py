@@ -102,7 +102,11 @@ def get_top_campaigns(
 
     ads = (
         db.query(Ad)
-        .filter(Ad.ad_timestamp >= fecha_from, Ad.ad_timestamp < fecha_to, Ad.ad_adset_name.isnot(None))
+        .filter(
+            Ad.ad_timestamp >= fecha_from,
+            Ad.ad_timestamp < fecha_to,
+            Ad.ad_adset_name.isnot(None),
+        )
         .all()
     )
 
