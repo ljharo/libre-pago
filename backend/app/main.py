@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.config import settings
@@ -18,7 +19,9 @@ def create_default_admin():
     db = SessionLocal()
     try:
         existing_admin = db.query(User).filter(User.username == settings.admin_username).first()
-        if not existing_admin:
+        if existing_admin:
+            print(f"Admin user already exists: {settings.admin_username}")
+        else:
             admin = User(
                 username=settings.admin_username,
                 password_hash=get_password_hash(settings.admin_password),
@@ -27,6 +30,9 @@ def create_default_admin():
             db.add(admin)
             db.commit()
             print(f"Admin user created: {settings.admin_username}")
+    except Exception as e:
+        print(f"Error creating admin: {e}")
+        db.rollback()
     finally:
         db.close()
 
@@ -46,6 +52,14 @@ app = FastAPI(
     description="Backend API for LibrePago - Spreadsheets management",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.add_middleware(RateLimitMiddleware)

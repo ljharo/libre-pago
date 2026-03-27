@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
-    rate_limit_enabled: bool = True
+    rate_limit_enabled: bool = False
     rate_limit_import: int = 20
-    rate_limit_list: int = 60
+    rate_limit_list: int = 1000
     rate_limit_stats: int = 30
     rate_limit_health: int = 200
     rate_limit_window: int = 60
 
-    cache_enabled: bool = True
+    cache_enabled: bool = False
     cache_ttl_stats: int = 300
     cache_ttl_list: int = 60
     cache_ttl_mappings: int = 3600
