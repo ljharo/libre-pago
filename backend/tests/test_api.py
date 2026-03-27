@@ -1,6 +1,8 @@
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.main import app
 
 
@@ -12,6 +14,16 @@ def client():
 @pytest.fixture
 def api_key():
     return "test-api-key"
+
+
+@pytest.fixture
+def jwt_token():
+    token = jwt.encode(
+        {"sub": "1", "username": "testuser", "role": "admin"},
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm,
+    )
+    return token
 
 
 class TestHealthEndpoint:
@@ -127,10 +139,10 @@ class TestImportEndpoint:
         assert "spreadsheet_type" in data
         assert "columns" in data
 
-    def test_import_rejects_invalid_file_type(self, client, api_key):
+    def test_import_rejects_invalid_file_type(self, client, api_key, jwt_token):
         response = client.post(
             "/api/import/closed_conversations",
-            headers={"X-API-Key": api_key},
+            headers={"X-API-Key": api_key, "Authorization": f"Bearer {jwt_token}"},
             files={"file": ("test.txt", b"test content", "text/plain")},
         )
         assert response.status_code == 400
