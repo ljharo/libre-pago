@@ -6,6 +6,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        args: ['--maxkb=10000']
       - id: check-json
       - id: check-toml
       - id: check-merge-conflict
@@ -15,10 +16,35 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
+        files: ^backend/
       - id: ruff-format
+        files: ^backend/
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: [--profile=black]
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      - id: frontend-build
+        name: Frontend Build
+        entry: npm run build
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]
+        files: ^frontend/
+        description: Check if frontend builds
+
+      - id: backend-tests
+        name: Backend Tests
+        entry: poetry run pytest
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]
+        files: ^backend/
+        description: Run backend tests

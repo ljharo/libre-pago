@@ -1,0 +1,135 @@
+## Diccionario de Spreadsheets - LibrePago
+
+Este documento detalla la estructura y el propósito de las cuatro hojas de cálculo principales utilizadas para el seguimiento de operaciones y ventas.
+
+---
+
+### 1. Libre Pago - Cerradas
+
+**Descripción:** Logs de todas las conversaciones finalizadas. Incluye detalles temporales, datos del cliente, el agente responsable y la categorización del contacto.
+
+| Campo | Descripción |
+| :--- | :--- |
+| **Fecha** | Fecha y hora en que se cerró la conversación. |
+| **ID de Contacto** | Identificador único del cliente. |
+| **Nombre** | Nombre, apellido o nickname del cliente. |
+| **Correo electrónico** | Email de contacto. |
+| **Teléfono** | Número celular del cliente. |
+| **Canal** | Red social de origen (Ver *Tabla de IDs de Canales*). |
+| **Cesionario** | Agente que cerró la conversación (Ver *Tabla de IDs de Agentes*). |
+| **Equipo** | Departamento del cesionario (Ver *Tabla de IDs de Equipo*). |
+| **Tipificación** | Categoría o tema principal de la conversación. |
+| **Resumen** | Síntesis de lo conversado durante la sesión. |
+
+Ejemplo  de consulta: "Dime cuantas conversacones fueron atendidas en el mes de marzo, segmentalas por canal y por equipo* o *Indica el % de consultas que ha atendido la IA en comparacion con los agentes humanos"
+
+---
+
+### 2. LibrePago - Ciclos de Vida
+
+**Descripción:** Registro de cambios en las etapas de venta realizados por agentes humanos o la Recepcionista IA, específicamente para interesados en puntos de venta.
+
+- **Campos Clave:**
+    * **Fecha:** Momento exacto del cambio de etapa.
+    * **ID de Contacto:** Identificador del cliente.
+    * **Ciclo de vida:** Etapa del pipeline (ej. *Hot Lead* para cliente interesado, *Customer* para ganado, *Cold Lead* para perdido).
+| **Nombre** | Nombre, apellido o nickname del cliente. |
+| **Correo electrónico** | Email de contacto. |
+| **Teléfono** | Número celular del cliente. |
+    * **Cesionario:** Nombre del agente que actualizó el estado.
+- **Campos a Ignorar:** `País`, `Vendedor`, `Canal`.
+
+| Campo | Descripción |
+| :--- | :--- |
+| **Fecha** | Fecha y hora en que se cambió de etapa de venta. |
+| **ID de Contacto** | Identificador único del cliente. |
+| **Ciclo de vida** | Etapa de la venta relacionado al pipeline. Customer es cerrado ganado y Cold Lead es cerrado perdido.. |
+| **Nombre** | Nombre, apellido o nickname del cliente. |
+| **Correo electrónico** | Email de contacto. |
+| **Teléfono** | Número celular del cliente. |
+| **País** | (ignorar) Pais desde donde escribe el cliente. |
+| **Cesionario** | Nombre del Agente que cerró la conversación. |
+| **Vendedor** | ignorar) Columna vacia. |
+| **Canal** |ignorar) Columna vacia. |
+
+Ejemplo de consulta Spreadsheet 2: "Dame el ciclo de vida mas reciente para el contacto ID **12345*** o *dame un grafico de las etapas de ventas actuales a la fecha"
+
+---
+
+### 3. LibrePago - Ads
+
+**Descripción:** Registro de leads provenientes de campañas publicitarias en Meta o TikTok.
+
+| Campo | Nota / Instrucción |
+| :--- | :--- |
+| **Contact ID / Teléfono / Nombre** | Datos de identificación del lead. |
+| **Agente** | Agente asignado a la conversación. |
+| **`ad_timestamp`** | Fecha en Unix. Aplicar: `=(A1/86400000000)+FECHA(1970;1;1)` donde A1 es `ad_timestamp`|
+| **`ad_channel_id` / `type`** | ID y Nombre del canal de entrada. |
+| **`ad_contact_type`** | Indica si el contacto es Nuevo o Recurrente. |
+| **`ad_adset_id`** | ID de la campaña. |
+| **`ad_adset_name`** | **(Importante)** Nombre de la campaña publicitaria. |
+| **`ad_ad_url`** | Enlace de la publicidad que generó el click. |
+| **`ad_status`** | Estatus de la campaña (Activa/Archivada). |
+| *Campos ignorados* | `ad_first_incoming_message`, `ad_id`, `ad_name`, `ad_campaign_id`, `ad_campaign_name`, `ad_reference`, `ad_objective`, `ad_optimization_goal`, `ad_destination_type`. |
+
+Ejemplo de consulta spreadsheet 3: "Dime el top 3 de campañas con mas interacciones en marzo y dame tambien la segmentacion de esas interacciones por canal de atencion".
+
+Ejemplo extra (mezclando informacion de Spreadsheet 3 (ads) con spreadsheet 2 (ciclo de vida).: "dame el total de conversaciones que entraron en el mes de marzo por ads e indicame cuantas quedaron en cada etapa de ciclo de vida* (la respuesta deberia ser algo como *hubo **300** cconversaciones abiertas por ads en el mes de marzo (**100** por campaña 1 y **200** por campaña 2... de estas **300** conversaciones, **100** quedaron en New Lead, 40 en Hot Lead y 60 en Customer")
+
+---
+
+### 4. LibrePago - CSAT
+
+**Descripción:** Recopilación de encuestas de satisfacción (1 al 5). Evalúa el desempeño del agente y la resolución del caso.
+
+- **ID de Contacto / Fecha:** Identificación del registro.
+- **Team:** Departamento del agente evaluado.
+- ****CSAT**:** Calificación (1 a 5).
+- **ID Cesionario:** ID del agente evaluado.
+- ****CSAT** Follow Up Feedback:** Justificación del cliente si la nota es menor a 5.
+- **Tiempo de resolución:** Duración total de la conversación abierta.
+## * **Tipificación / Resumen:** Contexto del caso evaluado.
+## 🔑 Tablas de Mapeo (IDs)
+
+### Canales
+
+| ID | Nombre del Canal |
+| :--- | :--- |
+| 440334 / 467245 | Whatsapp ATC |
+| 440986 | Whatsapp Comercial |
+| 440224 | Facebook |
+| 440258 | Instagram |
+| 440264 | TikTok |
+| 418328 | Telegram |
+
+### Agentes
+
+| ID | Nombre del Agente | Tipo |
+| :--- | :--- | :--- |
+| 905321 ai_agent | **Recepcionista AI** | IA |
+| 967370 user| Alessandra Barrios | Humano |
+| 965224 user| Daniela Vielma | Humano |
+| 965216 user| Vicente Benitez | Humano |
+| 965199 user| Alex Guzman | Humano |
+| 941623 user| Yusely Azuaje | Humano |
+| 967369 user| Ana Ruiz | Humano |
+| 851848 user| Giorgina Gonzalez | Humano |
+| 965205 user| Emilis Sanchez | Humano |
+| 965704 user| Alanis Acosta | Humano |
+| 965207 user| Enyely Hernández | Humano |
+| 965705 user| Atencion al cliente | Humano |
+| 1037754 user| Gabriel Noguera | Humano |
+| 836373 user| JOSE ANGEL MELENDEZ | Humano |
+| 963022 user| Richard White | Humano |
+| 965218 user| David Morales | Humano |
+| 965755 user| Alexander Vasquez | Humano |
+| 965779 user| Mercadeo LibrePago | Humano |
+| 972390 user| Adrian Marquez | Humano |
+
+### Equipos
+
+- ****34369**:** **ATC**
+- ****34367**:** Comercial
+- ****34370**:** Operaciones
+- ****34218**:** Test

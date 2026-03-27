@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     app_name: str = "LibrePago API"
     debug: bool = False
 
+    admin_username: str = "admin"
+    admin_password: str = "admin123"
+    jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_days: int = 1
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
