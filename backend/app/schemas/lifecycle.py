@@ -8,11 +8,8 @@ class LifecycleBase(BaseModel):
     fecha: datetime
     contact_id: int
     ciclo_vida: str
-    nombre: Optional[str] = None
-    email: Optional[str] = None
-    telefono: Optional[str] = None
     pais: Optional[str] = None
-    cesionario: Optional[str] = None
+    cesionario_id: Optional[int] = None
     vendedor: Optional[str] = None
     canal: Optional[str] = None
 
@@ -25,11 +22,8 @@ class LifecycleUpdate(BaseModel):
     fecha: Optional[datetime] = None
     contact_id: Optional[int] = None
     ciclo_vida: Optional[str] = None
-    nombre: Optional[str] = None
-    email: Optional[str] = None
-    telefono: Optional[str] = None
     pais: Optional[str] = None
-    cesionario: Optional[str] = None
+    cesionario_id: Optional[int] = None
     vendedor: Optional[str] = None
     canal: Optional[str] = None
 

@@ -7,9 +7,6 @@ from pydantic import BaseModel, ConfigDict
 class ClosedConversationBase(BaseModel):
     fecha: datetime
     contact_id: int
-    nombre: Optional[str] = None
-    email: Optional[str] = None
-    telefono: Optional[str] = None
     canal_id: Optional[int] = None
     cesionario_id: Optional[int] = None
     equipo_id: Optional[int] = None
@@ -24,9 +21,6 @@ class ClosedConversationCreate(ClosedConversationBase):
 class ClosedConversationUpdate(BaseModel):
     fecha: Optional[datetime] = None
     contact_id: Optional[int] = None
-    nombre: Optional[str] = None
-    email: Optional[str] = None
-    telefono: Optional[str] = None
     canal_id: Optional[int] = None
     cesionario_id: Optional[int] = None
     equipo_id: Optional[int] = None

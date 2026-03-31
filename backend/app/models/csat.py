@@ -8,7 +8,7 @@ class CSAT(Base):
     __tablename__ = "csat"
 
     id = Column(Integer, primary_key=True, index=True)
-    contact_id = Column(Integer, nullable=False, index=True)
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     fecha = Column(DateTime, nullable=False, index=True)
     team_id = Column(Integer, ForeignKey("teams.id"), index=True)
     csat_score = Column(Integer, nullable=False)
@@ -18,6 +18,7 @@ class CSAT(Base):
     tipificacion = Column(String(200))
     resumen = Column(Text)
 
+    contact = relationship("Contact", lazy="joined")
     team = relationship("Team", lazy="joined")
     cesionario = relationship("Agent", lazy="joined")
 

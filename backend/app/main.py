@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from alembic import command
+from alembic.config import Config
 from app.config import settings
 from app.database import SessionLocal, engine
 from app.logging_config import setup_logging
@@ -13,6 +15,30 @@ from app.routers import ads, auth, conversations, csat, import_, lifecycles, map
 from app.routers.auth import get_password_hash
 
 setup_logging()
+
+
+def run_migrations():
+    try:
+        from sqlalchemy import inspect, text
+
+        from app.database import engine
+
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+
+        if "contacts" in tables:
+            print("Tables already exist, skipping migrations")
+            return
+
+        with engine.connect() as conn:
+            conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+            conn.commit()
+
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        print("Migrations completed successfully")
+    except Exception as e:
+        print(f"Migration error: {e}")
 
 
 def create_default_admin():
@@ -42,6 +68,7 @@ async def lifespan(app: FastAPI):
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
 
+    run_migrations()
     create_default_admin()
 
     yield

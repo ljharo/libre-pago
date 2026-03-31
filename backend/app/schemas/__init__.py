@@ -22,6 +22,9 @@ from app.schemas.mappings import (
     ChannelBase,
     ChannelCreate,
     ChannelResponse,
+    ContactBase,
+    ContactCreate,
+    ContactResponse,
     TeamBase,
     TeamCreate,
     TeamResponse,
@@ -60,4 +63,7 @@ __all__ = [
     "TeamBase",
     "TeamCreate",
     "TeamResponse",
+    "ContactBase",
+    "ContactCreate",
+    "ContactResponse",
 ]

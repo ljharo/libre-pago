@@ -1,3 +1,9 @@
+# Reglas
+
+Cuando necesites documentación de librerías o APIs, usa `context7`.
+
+---
+
 # Comandos del Proyecto
 
 ## Desarrollo

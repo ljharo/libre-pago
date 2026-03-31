@@ -6,8 +6,6 @@ from pydantic import BaseModel, ConfigDict
 
 class AdBase(BaseModel):
     contact_id: int
-    nombre: Optional[str] = None
-    telefono: Optional[str] = None
     agente_id: Optional[int] = None
     ad_timestamp: Optional[datetime] = None
     ad_channel_id: Optional[str] = None
@@ -25,8 +23,6 @@ class AdCreate(AdBase):
 
 class AdUpdate(BaseModel):
     contact_id: Optional[int] = None
-    nombre: Optional[str] = None
-    telefono: Optional[str] = None
     agente_id: Optional[int] = None
     ad_timestamp: Optional[datetime] = None
     ad_channel_id: Optional[str] = None

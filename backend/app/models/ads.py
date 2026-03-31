@@ -8,9 +8,7 @@ class Ad(Base):
     __tablename__ = "ads"
 
     id = Column(Integer, primary_key=True, index=True)
-    contact_id = Column(Integer, nullable=False, index=True)
-    nombre = Column(String(200))
-    telefono = Column(String(50))
+    contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     agente_id = Column(Integer, ForeignKey("agents.id"), index=True)
     ad_timestamp = Column(DateTime, index=True)
     ad_channel_id = Column(String(50))
@@ -21,6 +19,7 @@ class Ad(Base):
     ad_ad_url = Column(String(500))
     ad_status = Column(String(50))
 
+    contact = relationship("Contact", lazy="joined")
     agente = relationship("Agent", lazy="joined")
 
     __table_args__ = (

@@ -3,10 +3,45 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import verify_api_key
-from app.models import Agent, Channel, Team
-from app.schemas import AgentCreate, AgentResponse, ChannelCreate, ChannelResponse, TeamCreate, TeamResponse
+from app.models import Agent, Channel, Contact, Team
+from app.schemas import (
+    AgentCreate,
+    AgentResponse,
+    ChannelCreate,
+    ChannelResponse,
+    ContactCreate,
+    ContactResponse,
+    TeamCreate,
+    TeamResponse,
+)
 
 router = APIRouter(prefix="/api", tags=["mappings"])
+
+
+@router.get("/contacts", response_model=list[ContactResponse])
+def get_contacts(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
+):
+    return db.query(Contact).offset(skip).limit(limit).all()
+
+
+@router.post("/contacts", response_model=ContactResponse, status_code=status.HTTP_201_CREATED)
+def create_contact(
+    contact: ContactCreate,
+    db: Session = Depends(get_db),
+    _: str = Depends(verify_api_key),
+):
+    existing = db.query(Contact).filter(Contact.contact_id == contact.contact_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Contact already exists")
+    db_contact = Contact(**contact.model_dump())
+    db.add(db_contact)
+    db.commit()
+    db.refresh(db_contact)
+    return db_contact
 
 
 @router.get("/channels", response_model=list[ChannelResponse])

@@ -1,6 +1,23 @@
 from pydantic import BaseModel, ConfigDict
 
 
+class ContactBase(BaseModel):
+    contact_id: int
+    nombre: str | None = None
+    email: str | None = None
+    telefono: str | None = None
+
+
+class ContactCreate(ContactBase):
+    pass
+
+
+class ContactResponse(ContactBase):
+    id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ChannelBase(BaseModel):
     channel_id: int
     name: str

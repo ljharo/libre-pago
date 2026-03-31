@@ -7,18 +7,83 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import TokenPayload, verify_api_key, verify_jwt
-from app.models import CSAT, Ad, Agent, Channel, ClosedConversation, Lifecycle, Team
+from app.models import CSAT, Ad, Agent, Channel, ClosedConversation, Contact, Lifecycle, Team
 from app.schemas.import_ import ImportResponse, ImportTemplateResponse, SpreadsheetType
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 
+
+def get_or_create_channel(db: Session, channel_id: int, name: str | None = None) -> int:
+    existing = db.query(Channel).filter(Channel.channel_id == channel_id).first()
+    if existing:
+        return existing.id
+    new_channel = Channel(channel_id=channel_id, name=name or f"Canal {channel_id}")
+    db.add(new_channel)
+    db.flush()
+    return new_channel.id
+
+
+def get_or_create_agent(db: Session, agent_id: int | None, name: str | None = None, agent_type: str = "user") -> int:
+    if agent_id is not None:
+        existing = db.query(Agent).filter(Agent.agent_id == agent_id).first()
+        if existing:
+            return existing.id
+    else:
+        if name:
+            existing = db.query(Agent).filter(Agent.name == name).first()
+            if existing:
+                return existing.id
+        else:
+            return 0
+
+    if agent_id is None and name:
+        import hashlib
+
+        agent_id = int(hashlib.md5(name.encode()).hexdigest()[:8], 16)
+
+    new_agent = Agent(agent_id=agent_id, name=name or f"Agente {agent_id}", agent_type=agent_type)
+    db.add(new_agent)
+    db.flush()
+    return new_agent.id
+
+
+def get_or_create_team(db: Session, team_id: int, name: str | None = None) -> int:
+    existing = db.query(Team).filter(Team.team_id == team_id).first()
+    if existing:
+        return existing.id
+    new_team = Team(team_id=team_id, name=name or f"Equipo {team_id}")
+    db.add(new_team)
+    db.flush()
+    return new_team.id
+
+
+def get_or_create_contact(
+    db: Session, contact_id: int, nombre: str | None = None, email: str | None = None, telefono: str | None = None
+) -> int:
+    existing = db.query(Contact).filter(Contact.contact_id == contact_id).first()
+    if existing:
+        if nombre and not existing.nombre:
+            existing.nombre = nombre
+        if email and not existing.email:
+            existing.email = email
+        if telefono and not existing.telefono:
+            existing.telefono = telefono
+        db.flush()
+        return existing.id
+    new_contact = Contact(
+        contact_id=contact_id,
+        nombre=nombre,
+        email=email,
+        telefono=telefono,
+    )
+    db.add(new_contact)
+    db.flush()
+    return new_contact.id
+
+
 COLUMN_MAPPING = {
     SpreadsheetType.CLOSED_CONVERSATIONS: {
         "Fecha": "fecha",
-        "ID de Contacto": "contact_id",
-        "Nombre": "nombre",
-        "Correo electronico": "email",
-        "Telefono": "telefono",
         "Canal": "canal_id",
         "Cesionario": "cesionario_id",
         "Equipo": "equipo_id",
@@ -27,21 +92,15 @@ COLUMN_MAPPING = {
     },
     SpreadsheetType.LIFECYCLES: {
         "Fecha": "fecha",
-        "ID de Contacto": "contact_id",
         "Ciclo de vida": "ciclo_vida",
-        "Nombre": "nombre",
-        "Correo electronico": "email",
-        "Telefono": "telefono",
         "PAis": "pais",
-        "Cesionario": "cesionario",
+        "Cesionario": "cesionario_id",
         "Vendedor": "vendedor",
         "Canal": "canal",
     },
     SpreadsheetType.ADS: {
-        "Contact ID": "contact_id",
-        "Telefono": "telefono",
-        "Nombre": "nombre",
         "Agente": "agente_id",
+        "Contact ID": "contact_id",
         "{{$clicktochat.ad_timestamp}} ": "ad_timestamp",
         "{{$clicktochat.ad_channel_id}}": "ad_channel_id",
         "{{$clicktochat.ad_channel_type}}": "ad_channel_type",
@@ -52,8 +111,8 @@ COLUMN_MAPPING = {
         "{{$clicktochat.ad_status}}": "ad_status",
     },
     SpreadsheetType.CSAT: {
-        "ID de Contacto": "contact_id",
         "Fecha": "fecha",
+        "ID de Contacto": "contact_id",
         "Team": "team_id",
         "CSAT": "csat_score",
         "ID Cesionario": "cesionario_id",
@@ -91,126 +150,214 @@ def convert_external_ids(df: pd.DataFrame, spreadsheet_type: SpreadsheetType, db
 
 
 def _convert_closed_conversations(df: pd.DataFrame, db: Session) -> pd.DataFrame:
-    canal_map = {int(row.channel_id): row.id for row in db.query(Channel).all()}
-    agent_map = {int(row.agent_id): row.id for row in db.query(Agent).all()}
-    team_map = {int(row.team_id): row.id for row in db.query(Team).all()}
+    df = df.copy()
+    contact_ids = []
+    canal_ids = []
+    cesionario_ids = []
+    equipo_ids = []
 
-    def parse_agent(val):
-        if pd.isna(val):
-            return None
-        val_str = str(val).strip()
-        if not val_str or val_str.lower() == "undefined":
-            return None
-        parts = val_str.split(" ")
-        if parts and parts[0].isdigit():
-            ext_id = int(parts[0])
-            return agent_map.get(ext_id)
-        try:
-            return agent_map.get(int(float(val)))
-        except (ValueError, TypeError):
-            return None
+    for _, row in df.iterrows():
+        contact_id_val = row.get("ID de Contacto")
+        canal_val = row.get("Canal")
+        cesionario_val = row.get("Cesionario")
+        equipo_val = row.get("Equipo")
 
-    def parse_canal(val):
-        if pd.isna(val):
-            return None
-        try:
-            int_val = int(float(val))
-            return canal_map.get(int_val)
-        except (ValueError, TypeError):
-            return None
+        contact_internal_id = None
+        canal_internal_id = None
+        cesionario_internal_id = None
+        equipo_internal_id = None
 
-    def parse_team(val):
-        if pd.isna(val):
-            return None
-        try:
-            int_val = int(float(val))
-            return team_map.get(int_val)
-        except (ValueError, TypeError):
-            return None
+        if not pd.isna(contact_id_val):
+            try:
+                contact_id = int(float(contact_id_val))
+                telefono_val = row.get("Telefono")
+                telefono_str = None
+                if not pd.isna(telefono_val):
+                    try:
+                        telefono_str = str(int(float(telefono_val)))
+                    except (ValueError, TypeError):
+                        telefono_str = str(telefono_val)
 
-    df["Canal"] = df["Canal"].apply(parse_canal)
-    df["Cesionario"] = df["Cesionario"].apply(parse_agent)
-    df["Equipo"] = df["Equipo"].apply(parse_team)
+                email_val = row.get("Correo electronico")
+                email_str = str(email_val) if not pd.isna(email_val) else None
+
+                contact_internal_id = get_or_create_contact(
+                    db,
+                    contact_id,
+                    nombre=row.get("Nombre"),
+                    email=email_str,
+                    telefono=telefono_str,
+                )
+            except (ValueError, TypeError):
+                pass
+
+        if not pd.isna(canal_val):
+            try:
+                canal_ext_id = int(float(canal_val))
+                canal_internal_id = get_or_create_channel(db, canal_ext_id)
+            except (ValueError, TypeError):
+                pass
+
+        if not pd.isna(cesionario_val):
+            cesionario_str = str(cesionario_val).strip()
+            if cesionario_str and cesionario_str.lower() != "undefined":
+                parts = cesionario_str.split(" ")
+                if parts and parts[0].isdigit():
+                    try:
+                        agent_ext_id = int(parts[0])
+                        cesionario_internal_id = get_or_create_agent(db, agent_ext_id, cesionario_str)
+                    except ValueError:
+                        pass
+                else:
+                    agent = db.query(Agent).filter(Agent.name.ilike(cesionario_str)).first()
+                    if agent:
+                        cesionario_internal_id = agent.id
+
+        if not pd.isna(equipo_val):
+            try:
+                team_ext_id = int(float(equipo_val))
+                equipo_internal_id = get_or_create_team(db, team_ext_id)
+            except (ValueError, TypeError):
+                pass
+
+        contact_ids.append(contact_internal_id)
+        canal_ids.append(canal_internal_id)
+        cesionario_ids.append(cesionario_internal_id)
+        equipo_ids.append(equipo_internal_id)
+
+    df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
+    df["Canal"] = pd.Series(canal_ids, dtype="Int64")
+    df["Cesionario"] = pd.Series(cesionario_ids, dtype="Int64")
+    df["Equipo"] = pd.Series(equipo_ids, dtype="Int64")
 
     return df
 
 
 def _convert_lifecycles(df: pd.DataFrame, db: Session) -> pd.DataFrame:
-    agent_name_map = {row.name.lower(): row.id for row in db.query(Agent).all()}
+    df = df.copy()
+    contact_ids = []
 
-    def parse_cesionario(val):
-        if pd.isna(val):
-            return None
-        val_str = str(val).strip()
-        if val_str.lower() in ("undefined undefined", "nan", ""):
-            return None
-        agent_id = agent_name_map.get(val_str.lower())
-        return agent_id
+    for _, row in df.iterrows():
+        contact_id_val = row.get("ID de Contacto")
+        contact_internal_id = None
 
-    df["Cesionario"] = df["Cesionario"].apply(parse_cesionario)
+        if not pd.isna(contact_id_val):
+            try:
+                contact_id = int(float(contact_id_val))
+                telefono_val = row.get("Telefono")
+                telefono_str = None
+                if not pd.isna(telefono_val):
+                    try:
+                        telefono_str = str(int(float(telefono_val)))
+                    except (ValueError, TypeError):
+                        telefono_str = str(telefono_val)
+
+                email_val = row.get("Correo electronico")
+                email_str = str(email_val) if not pd.isna(email_val) else None
+
+                contact_internal_id = get_or_create_contact(
+                    db,
+                    contact_id,
+                    nombre=row.get("Nombre"),
+                    email=email_str,
+                    telefono=telefono_str,
+                )
+            except (ValueError, TypeError):
+                pass
+
+        contact_ids.append(contact_internal_id)
+
+    df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
 
     return df
 
 
 def _convert_ads(df: pd.DataFrame, db: Session) -> pd.DataFrame:
-    agent_name_map = {row.name.lower(): row.id for row in db.query(Agent).all()}
+    df = df.copy()
+    contact_ids = []
+    agente_ids = []
 
-    def parse_agent(val):
-        if pd.isna(val):
-            return None
-        val_str = str(val).strip()
-        return agent_name_map.get(val_str.lower())
+    for _, row in df.iterrows():
+        contact_id_val = row.get("Contact ID")
+        agente_val = row.get("Agente")
+        contact_internal_id = None
+        agente_internal_id = None
 
-    def parse_timestamp(val):
-        if pd.isna(val):
-            return None
-        try:
-            unix_val = float(val)
-            return datetime.fromtimestamp(unix_val / 1000)
-        except (ValueError, OSError):
-            return None
+        if not pd.isna(contact_id_val):
+            try:
+                contact_id = int(float(contact_id_val))
+                nombre = row.get("Nombre") if not pd.isna(row.get("Nombre")) else None
+                telefono_val = row.get("Telefono")
+                telefono_str = None
+                if not pd.isna(telefono_val):
+                    try:
+                        telefono_str = str(int(float(telefono_val)))
+                    except (ValueError, TypeError):
+                        telefono_str = str(telefono_val)
+                contact_internal_id = get_or_create_contact(db, contact_id, nombre=nombre, telefono=telefono_str)
+            except (ValueError, TypeError):
+                pass
 
-    df["Agente"] = df["Agente"].apply(parse_agent)
-    df["{{$clicktochat.ad_timestamp}} "] = df["{{$clicktochat.ad_timestamp}} "].apply(parse_timestamp)
+        if not pd.isna(agente_val):
+            agente_str = str(agente_val).strip()
+            if agente_str:
+                agente = db.query(Agent).filter(Agent.name.ilike(agente_str)).first()
+                if agente:
+                    agente_internal_id = agente.id
+                else:
+                    agente_internal_id = get_or_create_agent(db, None, agente_str)
+
+        contact_ids.append(contact_internal_id)
+        agente_ids.append(agente_internal_id)
+
+    df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
+    df["Agente"] = pd.Series(agente_ids, dtype="Int64")
 
     return df
 
 
 def _convert_csat(df: pd.DataFrame, db: Session) -> pd.DataFrame:
-    agent_map = {int(row.agent_id): row.id for row in db.query(Agent).all()}
-    team_map = {int(row.team_id): row.id for row in db.query(Team).all()}
+    df = df.copy()
+    contact_ids = []
+    cesionario_ids = []
+    team_ids = []
 
-    def parse_agent(val):
-        if pd.isna(val):
-            return None
-        try:
-            return agent_map.get(int(float(val)))
-        except (ValueError, TypeError):
-            return None
+    for _, row in df.iterrows():
+        contact_id_val = row.get("ID de Contacto")
+        cesionario_val = row.get("ID Cesionario")
+        team_val = row.get("Team")
+        contact_internal_id = None
+        cesionario_internal_id = None
+        team_internal_id = None
 
-    def parse_team(val):
-        if pd.isna(val):
-            return None
-        try:
-            return team_map.get(int(float(val)))
-        except (ValueError, TypeError):
-            return None
+        if not pd.isna(contact_id_val):
+            try:
+                contact_id = int(float(contact_id_val))
+                contact_internal_id = get_or_create_contact(db, contact_id)
+            except (ValueError, TypeError):
+                pass
 
-    def parse_time(val):
-        if pd.isna(val):
-            return None
-        val_str = str(val)
-        try:
-            parts = val_str.split(":")
-            if len(parts) == 3:
-                return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-        except (ValueError, IndexError):
-            pass
-        return None
+        if not pd.isna(cesionario_val):
+            try:
+                agent_id = int(float(cesionario_val))
+                cesionario_internal_id = get_or_create_agent(db, agent_id)
+            except (ValueError, TypeError):
+                pass
 
-    df["ID Cesionario"] = df["ID Cesionario"].apply(parse_agent)
-    df["Team"] = df["Team"].apply(parse_team)
-    df["Tiempo de resolución"] = df["Tiempo de resolución"].apply(parse_time)
+        if not pd.isna(team_val):
+            try:
+                team_id = int(float(team_val))
+                team_internal_id = get_or_create_team(db, team_id)
+            except (ValueError, TypeError):
+                pass
+
+        contact_ids.append(contact_internal_id)
+        cesionario_ids.append(cesionario_internal_id)
+        team_ids.append(team_internal_id)
+
+    df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
+    df["ID Cesionario"] = pd.Series(cesionario_ids, dtype="Int64")
+    df["Team"] = pd.Series(team_ids, dtype="Int64")
 
     return df
 
@@ -259,6 +406,7 @@ async def import_spreadsheet(
         ) from e
 
     df = convert_external_ids(df, spreadsheet_type, db)
+    db.commit()
 
     columns: dict[str, str] = COLUMN_MAPPING[spreadsheet_type]
 
@@ -268,27 +416,34 @@ async def import_spreadsheet(
     def validate_row(row_data: dict, row_num: int) -> tuple[bool, str | None]:
         if not row_data.get("contact_id"):
             return False, f"Fila {row_num}: contact_id es requerido"
-        if not isinstance(row_data.get("contact_id"), int | float):
-            try:
-                int(row_data["contact_id"])
-            except (ValueError, TypeError):
-                return False, f"Fila {row_num}: contact_id debe ser un número"
-        if row_data.get("nombre") and not isinstance(row_data.get("nombre"), str):
-            return False, f"Fila {row_num}: nombre debe ser texto"
+        if not isinstance(row_data.get("contact_id"), int):
+            return False, f"Fila {row_num}: contact_id debe ser un número entero"
         return True, None
 
     try:
         batch_size = 100
+        has_contact_col = "contact_id" in df.columns
         for _, row in df.iterrows():
             try:
                 data: dict[str, object] = {}
+
+                if has_contact_col:
+                    contact_val = row.get("contact_id")
+                    if contact_val is not None and not pd.isna(contact_val):
+                        try:
+                            data["contact_id"] = int(contact_val)
+                        except (ValueError, TypeError):
+                            data["contact_id"] = None
+                    else:
+                        data["contact_id"] = None
+
                 for excel_col, db_col in columns.items():
                     if db_col not in data:
                         data[db_col] = None
 
                     if excel_col in row.index:
                         val = row[excel_col]
-                        if pd.isna(val):  # type: ignore[call-overload]
+                        if pd.isna(val):
                             data[db_col] = None
                         else:
                             if db_col == "fecha":
@@ -296,6 +451,30 @@ async def import_spreadsheet(
                                     data[db_col] = val
                                 else:
                                     data[db_col] = pd.to_datetime(val)
+                            elif db_col == "ad_timestamp":
+                                if isinstance(val, int | float):
+                                    timestamp_ms = int(val)
+                                    try:
+                                        data[db_col] = datetime.fromtimestamp(timestamp_ms / 1000)
+                                    except (ValueError, OSError):
+                                        data[db_col] = None
+                                else:
+                                    data[db_col] = None
+                            elif db_col == "tiempo_resolucion":
+                                if isinstance(val, str):
+                                    try:
+                                        parts = val.split(":")
+                                        if len(parts) == 3:
+                                            seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                                        elif len(parts) == 2:
+                                            seconds = int(parts[0]) * 60 + int(parts[1])
+                                        else:
+                                            seconds = int(parts[0])
+                                        data[db_col] = seconds
+                                    except (ValueError, TypeError):
+                                        data[db_col] = None
+                                else:
+                                    data[db_col] = None
                             elif db_col in ("canal_id", "cesionario_id", "equipo_id"):
                                 if pd.isna(val):
                                     data[db_col] = None
@@ -305,10 +484,8 @@ async def import_spreadsheet(
                                     except (ValueError, TypeError):
                                         data[db_col] = None
                             elif db_col == "contact_id":
-                                try:
-                                    data[db_col] = int(float(val))
-                                except (ValueError, TypeError):
-                                    data[db_col] = None
+                                continue
+
                             elif db_col in (
                                 "ad_channel_id",
                                 "ad_channel_type",
