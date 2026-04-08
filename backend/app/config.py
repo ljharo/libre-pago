@@ -42,29 +42,36 @@ class Settings(BaseSettings):
     jwt_expire_days: int = 1
 
     def __init__(self, **kwargs):
-        # Override with environment variables (uppercase)
-        env_mappings = {
-            "db_user": os.environ.get("DB_USER") or "postgres",
-            "db_password": os.environ.get("DB_PASSWORD") or "postgres",
-            "db_host": os.environ.get("DB_HOST") or "localhost",
-            "db_port": int(os.environ.get("DB_PORT") or "5432"),
-            "db_name": os.environ.get("DB_NAME") or "librepago",
-            "redis_host": os.environ.get("REDIS_HOST") or "localhost",
-            "redis_port": int(os.environ.get("REDIS_PORT") or "6379"),
-            "redis_db": int(os.environ.get("REDIS_DB") or "0"),
-            "api_key": os.environ.get("API_KEY") or "default-api-key",
-            "jwt_secret": os.environ.get("JWT_SECRET") or "change-me",
-            "jwt_algorithm": os.environ.get("JWT_ALGORITHM") or "HS256",
-            "jwt_expire_days": int(os.environ.get("JWT_EXPIRE_DAYS") or "1"),
-            "admin_username": os.environ.get("ADMIN_USERNAME") or "admin",
-            "admin_password": os.environ.get("ADMIN_PASSWORD") or "admin123",
-            "debug": (os.environ.get("DEBUG") or "false").lower() == "true",
-            "log_level": os.environ.get("LOG_LEVEL") or "INFO",
-            "log_format": os.environ.get("LOG_FORMAT") or "json",
-            "rate_limit_enabled": (os.environ.get("RATE_LIMIT_ENABLED") or "false").lower() == "true",
-            "cache_enabled": (os.environ.get("CACHE_ENABLED") or "false").lower() == "true",
+        # Merge environment variables (uppercase) with .env file values
+        # Priority: explicit kwargs > env vars > .env file > defaults
+        env_vars = {
+            "DB_USER",
+            "DB_PASSWORD",
+            "DB_HOST",
+            "DB_PORT",
+            "DB_NAME",
+            "REDIS_HOST",
+            "REDIS_PORT",
+            "REDIS_DB",
+            "API_KEY",
+            "DEBUG",
+            "LOG_LEVEL",
+            "LOG_FORMAT",
+            "JWT_SECRET",
+            "JWT_ALGORITHM",
+            "JWT_EXPIRE_DAYS",
+            "ADMIN_USERNAME",
+            "ADMIN_PASSWORD",
+            "RATE_LIMIT_ENABLED",
+            "RATE_LIMIT_IMPORT",
+            "CACHE_ENABLED",
         }
-        kwargs.update(env_mappings)
+
+        for key in env_vars:
+            env_key = key.lower()
+            if env_key not in kwargs and os.environ.get(key):
+                kwargs[env_key] = os.environ.get(key)
+
         super().__init__(**kwargs)
 
     @property

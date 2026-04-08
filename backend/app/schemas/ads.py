@@ -8,7 +8,7 @@ class AdBase(BaseModel):
     contact_id: int
     agente_id: Optional[int] = None
     ad_timestamp: Optional[datetime] = None
-    ad_channel_id: Optional[str] = None
+    canal_id: Optional[int] = None
     ad_channel_type: Optional[str] = None
     ad_contact_type: Optional[str] = None
     ad_adset_id: Optional[str] = None
@@ -25,13 +25,10 @@ class AdUpdate(BaseModel):
     contact_id: Optional[int] = None
     agente_id: Optional[int] = None
     ad_timestamp: Optional[datetime] = None
-    ad_channel_id: Optional[str] = None
+    canal_id: Optional[int] = None
     ad_channel_type: Optional[str] = None
     ad_contact_type: Optional[str] = None
     ad_adset_id: Optional[str] = None
-    ad_adset_name: Optional[str] = None
-    ad_ad_url: Optional[str] = None
-    ad_status: Optional[str] = None
 
 
 class AdResponse(AdBase):

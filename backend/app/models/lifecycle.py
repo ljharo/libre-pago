@@ -11,10 +11,7 @@ class Lifecycle(Base):
     fecha = Column(DateTime, nullable=False, index=True)
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     ciclo_vida = Column(String(50), nullable=False, index=True)
-    pais = Column(String(100))
     cesionario_id = Column(Integer, ForeignKey("agents.id"), index=True)
-    vendedor = Column(String(200))
-    canal = Column(String(50))
 
     contact = relationship("Contact", lazy="joined")
     cesionario = relationship("Agent", lazy="joined")

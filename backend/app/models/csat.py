@@ -11,6 +11,7 @@ class CSAT(Base):
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     fecha = Column(DateTime, nullable=False, index=True)
     team_id = Column(Integer, ForeignKey("teams.id"), index=True)
+    canal_id = Column(Integer, ForeignKey("channels.id"), index=True)
     csat_score = Column(Integer, nullable=False)
     cesionario_id = Column(Integer, ForeignKey("agents.id"), index=True)
     feedback = Column(Text)

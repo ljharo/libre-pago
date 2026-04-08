@@ -11,7 +11,7 @@ class Ad(Base):
     contact_id = Column(Integer, ForeignKey("contacts.id"), nullable=False, index=True)
     agente_id = Column(Integer, ForeignKey("agents.id"), index=True)
     ad_timestamp = Column(DateTime, index=True)
-    ad_channel_id = Column(String(50))
+    canal_id = Column(Integer, ForeignKey("channels.id"), index=True)
     ad_channel_type = Column(String(50))
     ad_contact_type = Column(String(50))
     ad_adset_id = Column(String(100))
@@ -21,6 +21,7 @@ class Ad(Base):
 
     contact = relationship("Contact", lazy="joined")
     agente = relationship("Agent", lazy="joined")
+    canal = relationship("Channel", lazy="joined")
 
     __table_args__ = (
         Index("idx_ads_timestamp", "ad_timestamp"),

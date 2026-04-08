@@ -8,6 +8,7 @@ class CSATBase(BaseModel):
     contact_id: int
     fecha: datetime
     team_id: Optional[int] = None
+    canal_id: Optional[int] = None
     csat_score: int
     cesionario_id: Optional[int] = None
     feedback: Optional[str] = None

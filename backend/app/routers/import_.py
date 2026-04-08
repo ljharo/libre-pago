@@ -93,16 +93,13 @@ COLUMN_MAPPING = {
     SpreadsheetType.LIFECYCLES: {
         "Fecha": "fecha",
         "Ciclo de vida": "ciclo_vida",
-        "PAis": "pais",
         "Cesionario": "cesionario_id",
-        "Vendedor": "vendedor",
-        "Canal": "canal",
     },
     SpreadsheetType.ADS: {
         "Agente": "agente_id",
         "Contact ID": "contact_id",
         "{{$clicktochat.ad_timestamp}} ": "ad_timestamp",
-        "{{$clicktochat.ad_channel_id}}": "ad_channel_id",
+        "{{$clicktochat.ad_channel_id}}": "canal_id",
         "{{$clicktochat.ad_channel_type}}": "ad_channel_type",
         "{{$clicktochat.ad_contact_type}}": "ad_contact_type",
         "{{$clicktochat.ad_adset_id}}": "ad_adset_id",
@@ -114,6 +111,7 @@ COLUMN_MAPPING = {
         "Fecha": "fecha",
         "ID de Contacto": "contact_id",
         "Team": "team_id",
+        "Canal": "canal_id",
         "CSAT": "csat_score",
         "ID Cesionario": "cesionario_id",
         "CSAT Follow Up Feedback": "feedback",
@@ -276,12 +274,15 @@ def _convert_ads(df: pd.DataFrame, db: Session) -> pd.DataFrame:
     df = df.copy()
     contact_ids = []
     agente_ids = []
+    canal_ids = []
 
     for _, row in df.iterrows():
         contact_id_val = row.get("Contact ID")
         agente_val = row.get("Agente")
+        canal_val = row.get("{{$clicktochat.ad_channel_id}}")
         contact_internal_id = None
         agente_internal_id = None
+        canal_internal_id = None
 
         if not pd.isna(contact_id_val):
             try:
@@ -307,11 +308,20 @@ def _convert_ads(df: pd.DataFrame, db: Session) -> pd.DataFrame:
                 else:
                     agente_internal_id = get_or_create_agent(db, None, agente_str)
 
+        if not pd.isna(canal_val):
+            try:
+                canal_id = int(float(canal_val))
+                canal_internal_id = get_or_create_channel(db, canal_id)
+            except (ValueError, TypeError):
+                pass
+
         contact_ids.append(contact_internal_id)
         agente_ids.append(agente_internal_id)
+        canal_ids.append(canal_internal_id)
 
     df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
     df["Agente"] = pd.Series(agente_ids, dtype="Int64")
+    df["{{$clicktochat.ad_channel_id}}"] = pd.Series(canal_ids, dtype="Int64")
 
     return df
 
@@ -321,14 +331,17 @@ def _convert_csat(df: pd.DataFrame, db: Session) -> pd.DataFrame:
     contact_ids = []
     cesionario_ids = []
     team_ids = []
+    canal_ids = []
 
     for _, row in df.iterrows():
         contact_id_val = row.get("ID de Contacto")
         cesionario_val = row.get("ID Cesionario")
         team_val = row.get("Team")
+        canal_val = row.get("Canal")
         contact_internal_id = None
         cesionario_internal_id = None
         team_internal_id = None
+        canal_internal_id = None
 
         if not pd.isna(contact_id_val):
             try:
@@ -351,13 +364,22 @@ def _convert_csat(df: pd.DataFrame, db: Session) -> pd.DataFrame:
             except (ValueError, TypeError):
                 pass
 
+        if not pd.isna(canal_val):
+            try:
+                canal_id = int(float(canal_val))
+                canal_internal_id = get_or_create_channel(db, canal_id)
+            except (ValueError, TypeError):
+                pass
+
         contact_ids.append(contact_internal_id)
         cesionario_ids.append(cesionario_internal_id)
         team_ids.append(team_internal_id)
+        canal_ids.append(canal_internal_id)
 
     df["contact_id"] = pd.Series(contact_ids, dtype="Int64")
     df["ID Cesionario"] = pd.Series(cesionario_ids, dtype="Int64")
     df["Team"] = pd.Series(team_ids, dtype="Int64")
+    df["Canal"] = pd.Series(canal_ids, dtype="Int64")
 
     return df
 
@@ -452,11 +474,20 @@ async def import_spreadsheet(
                                 else:
                                     data[db_col] = pd.to_datetime(val)
                             elif db_col == "ad_timestamp":
-                                if isinstance(val, int | float):
+                                import numbers
+
+                                if isinstance(val, numbers.Real):
                                     timestamp_ms = int(val)
                                     try:
-                                        data[db_col] = datetime.fromtimestamp(timestamp_ms / 1000)
+                                        data[db_col] = datetime.fromtimestamp(timestamp_ms / 1e6)
                                     except (ValueError, OSError):
+                                        data[db_col] = None
+                                elif isinstance(val, str):
+                                    cleaned = val.strip("'\" ").replace(",", "")
+                                    try:
+                                        timestamp_ms = int(float(cleaned))
+                                        data[db_col] = datetime.fromtimestamp(timestamp_ms / 1e6)
+                                    except (ValueError, TypeError):
                                         data[db_col] = None
                                 else:
                                     data[db_col] = None
@@ -487,7 +518,6 @@ async def import_spreadsheet(
                                 continue
 
                             elif db_col in (
-                                "ad_channel_id",
                                 "ad_channel_type",
                                 "ad_contact_type",
                                 "ad_adset_id",
@@ -589,10 +619,7 @@ def get_template(
                 "Nombre",
                 "Correo electronico",
                 "Telefono",
-                "PAis",
                 "Cesionario",
-                "Vendedor",
-                "Canal",
             ],
             "sample_data": [
                 {
@@ -602,10 +629,7 @@ def get_template(
                     "Nombre": "Juan Perez",
                     "Correo electronico": "juan@email.com",
                     "Telefono": "+1234567890",
-                    "PAis": "Venezuela",
                     "Cesionario": "Alessandra Barrios",
-                    "Vendedor": "",
-                    "Canal": "",
                 }
             ],
         },
